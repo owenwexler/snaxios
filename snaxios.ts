@@ -90,7 +90,7 @@ async function snaxios<T>(url: string, args: SnaxiosArgs): Promise<SnaxiosReturn
 
   for (const key in typedParams) {
     if (typedParams.hasOwnProperty(key)) {
-      urlWithParams += `${key}=${typedParams[key]}&`;
+      urlWithParams += `${encodeURIComponent(key)}=${encodeURIComponent(String(typedParams[key]))}&`;
     }
   }
 

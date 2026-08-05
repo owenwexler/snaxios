@@ -221,6 +221,31 @@ export const createMockServer = (): MockServer => {
           }
         },
       },
+      // echoes back the parsed query string so tests can confirm snaxios serialized params correctly
+      '/echo/query': {
+        GET: (req) => {
+          try {
+            requireApiKey(req, apiKey);
+
+            const url = new URL(req.url);
+            return Response.json(Object.fromEntries(url.searchParams.entries()), { status: 200 });
+          } catch (err) {
+            return toErrorResponse(err);
+          }
+        },
+      },
+      // returns a 200 with a body that isn't valid JSON, to confirm response.json() throwing
+      // is routed to the generic snaxios error rather than crashing
+      '/malformed-json': {
+        GET: (req) => {
+          try {
+            requireApiKey(req, apiKey);
+            return new Response('this is not valid json', { status: 200 });
+          } catch (err) {
+            return toErrorResponse(err);
+          }
+        },
+      },
     },
   });
 

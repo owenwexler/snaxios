@@ -114,6 +114,55 @@ describe('snaxios against a read-only mock backend', () => {
       expect(typeof todo.completed).toBe('boolean');
     }
   });
+
+  test('multiple params are all serialized onto the query string', async () => {
+    const result = await snaxios<Record<string, string>>(`${baseUrl}/echo/query`, {
+      method: 'GET',
+      headers: { 'x-api-key': server.apiKey },
+      params: { limit: 2, completed: true },
+    });
+
+    expect(result.status).toBe(200);
+    expect(result.data).toEqual({ limit: '2', completed: 'true' });
+  });
+
+  test('params with values needing URL-encoding are encoded and decoded back to the original value', async () => {
+    const result = await snaxios<Record<string, string>>(`${baseUrl}/echo/query`, {
+      method: 'GET',
+      headers: { 'x-api-key': server.apiKey },
+      params: { search: 'snacks & chips = yummy 🍿' },
+    });
+
+    expect(result.status).toBe(200);
+    expect(result.data).toEqual({ search: 'snacks & chips = yummy 🍿' });
+  });
+
+  test('an empty params object hits the same code path as no params at all', async () => {
+    const result = await snaxios<Todo[]>(`${baseUrl}/todos`, {
+      method: 'GET',
+      headers: { 'x-api-key': server.apiKey },
+      params: {},
+    });
+
+    expect(result.status).toBe(200);
+    expect(result.data).toHaveLength(3);
+  });
+
+  test('a response body that is not valid JSON is caught rather than crashing, and returns a snaxios error shape with a 500', async () => {
+    const result = await snaxios<never>(`${baseUrl}/malformed-json`, {
+      method: 'GET',
+      headers: { 'x-api-key': server.apiKey },
+    });
+
+    // the JSON parse failure is a real thrown SyntaxError, so it carries its own `.message` -
+    // checkHasMessage surfaces that message rather than falling all the way back to the fully
+    // generic snaxios error text, while code/details/hint stay generic.
+    expect(result.status).toBe(500);
+    expect(result.data).toBeNull();
+    expect(result.error?.code).toBe('snaxios_error');
+    expect(typeof result.error?.message).toBe('string');
+    expect(result.error?.message.length).toBeGreaterThan(0);
+  });
 });
 
 describe('snaxios against a mutating mock backend', () => {
@@ -204,6 +253,55 @@ describe('snaxios against a mutating mock backend', () => {
     expect(getResult.status).toBe(200);
     expect(getResult.data).toHaveLength(2);
     expect(getResult.data?.some((todo) => todo.id === 1)).toBe(false);
+  });
+
+  test('PUT to a todo that does not exist returns a propagated 404 in the snaxios error shape', async () => {
+    const result = await snaxios<Todo>(`${baseUrl}/todos/999`, {
+      method: 'PUT',
+      headers: { 'x-api-key': server.apiKey, 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'does not matter', completed: false }),
+    });
+
+    expect(result.status).toBe(404);
+    expect(result.data).toBeNull();
+    expect(result.error?.message).toBe('Todo not found');
+  });
+
+  test('PATCH to a todo that does not exist returns a propagated 404 in the snaxios error shape', async () => {
+    const result = await snaxios<Todo>(`${baseUrl}/todos/999`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': server.apiKey, 'content-type': 'application/json' },
+      body: JSON.stringify({ completed: true }),
+    });
+
+    expect(result.status).toBe(404);
+    expect(result.data).toBeNull();
+    expect(result.error?.message).toBe('Todo not found');
+  });
+
+  test('a partial PUT body fully replaces the todo, dropping fields the body omitted', async () => {
+    const putResult = await snaxios<Todo>(`${baseUrl}/todos/2`, {
+      method: 'PUT',
+      headers: { 'x-api-key': server.apiKey, 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'only a title' }),
+    });
+
+    expect(putResult.status).toBe(200);
+    // todo 2 started as { title: 'Refactor Axios into Snaxios', completed: true } - PUT must not
+    // carry `completed` forward from the old record just because the body omitted it.
+    expect(putResult.data).toEqual({ id: 2, title: 'only a title', completed: false });
+  });
+
+  test('a partial PATCH body merges onto the existing todo instead of replacing it', async () => {
+    const patchResult = await snaxios<Todo>(`${baseUrl}/todos/2`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': server.apiKey, 'content-type': 'application/json' },
+      body: JSON.stringify({ completed: false }),
+    });
+
+    expect(patchResult.status).toBe(200);
+    // unlike PUT, PATCH must preserve the pre-existing title since the body didn't include it.
+    expect(patchResult.data).toEqual({ id: 2, title: 'Refactor Axios into Snaxios', completed: false });
   });
 });
 

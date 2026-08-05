@@ -1,10 +1,10 @@
 # WHAT IS SNAXIOS?
-Snaxios is a minimal one-file zero-dependency HTTP library that can serve as a drop-in replacement for Axios in most common use cases.  It is a minimal type-safe wrapper around the JavaScript/TypeScript fetch API that returns a similar data shape to Axios, but excludes some functionality.  Think of it as the Preact to Axios' React.
+Snaxios is a minimal one-file zero-dependency HTTP library that can serve as, not exactly a drop-in replacement, but a minimal-refactor alternative to Axios in most common use cases.  It is a minimal type-safe wrapper around the JavaScript/TypeScript fetch API that returns a similar data shape to Axios, but excludes some functionality.  Think of it as the Preact to Axios' React.
 
 # WHY SNAXIOS?
 Axios has been hit with supply chain attacks recently, causing some developers to consider moving away.  A one-file zero dependency library that is copied into the project manually without the intervention of package managers or post-install scripts inherently removes the vulnerability to supply chain attacks.  However, there are some issues with type safety around the standard Fetch library, so Snaxios takes in a generic type to ensure end-to-end type safety with its use.  Like Axios, Snaxios also allows users to skip the ```response.json``` step while still supplying all needed information to the user.
 
-Snaxios was developed by the DANCENAV team for internal use originally and open-sourced.
+Snaxios was developed by the DANCENAV team for internal use originally and open-sourced when we determined it would be a useful open-source library.
 
 # DEVELOPMENT STACK
 Testing runtime: Bun

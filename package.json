@@ -1,0 +1,13 @@
+{
+  "name": "snaxios",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "module": "snaxios.ts",
+  "scripts": {
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

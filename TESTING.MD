@@ -20,3 +20,16 @@ Option 2: Test using a reliable live API like jsonplaceholder. Could destabilize
 * Snaxios' returned data object is of the same type that was passed in to Snaxios as a generic.
 
 Please suggest any other necessary test cases that may have been missed here.
+
+# SUGGESTED ADDITIONAL TEST CASES
+The following were implemented alongside the test cases above, in ```tests/snaxios.test.ts```:
+* GET request for a resource that does not exist (404) returns the propagated error message in the Snaxios error shape with the proper status code. This exercises the same non-2xx/response.ok code path as the ```/error``` routes, but from an ordinary CRUD route rather than a route dedicated to throwing.
+* A network-level failure (request to an unreachable host, no HTTP response at all) is still caught and returns the generic Snaxios error with a 500 status code. This exercises the original ```catch``` branch (```fetch``` itself rejecting), as distinct from the non-2xx-response branch the ```/error``` routes and the 401/404 cases exercise.
+
+The following were not implemented, but are worth considering if the mock backend or Snaxios' feature set grows:
+* A PATCH/PUT to a nonexistent id returns a 404, propagated the same way as the GET 404 case.
+* Params serialization: multiple params in the same request, params with values that need URL-encoding (spaces, ```&```, ```=```, unicode), and a params object with no keys (should hit the same code path as no params at all).
+* ```nextRevalidateTime``` is actually forwarded to ```fetch``` as ```{ next: { revalidate } }``` (currently untestable from a plain Bun mock server, since that field only has meaning to Next.js' patched fetch - would need a Next.js integration test or a spy on global ```fetch```).
+* A response body that isn't valid JSON at all (e.g. an empty 204 body, or an HTML error page) - confirms ```response.json()``` throwing is still routed to the generic Snaxios error rather than crashing.
+* Sending a body with PATCH/PUT that omits fields does a partial vs. full overwrite as expected (PATCH keeps unspecified fields, PUT replaces them) - partially covered already since the PUT test's replacement body omits nothing, but a case with a deliberately partial PUT body would pin down that PUT does *not* merge.
+* Option 2 (a live API such as jsonplaceholder) was not implemented - the mock backend covers all listed cases without the flakiness risk called out in this document, so no external-API test was added.

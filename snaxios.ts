@@ -49,15 +49,31 @@ const snaxiosError = {
   hint: 'Log the output of this fetch to see what is happening'
 }
 
-const isDEErrorType = (error: unknown) => {
-  return (error.code && error.message && error.details && error.hint);
+const isDEErrorType = (error: unknown): error is ErrorType => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error &&
+    'details' in error &&
+    'hint' in error
+  );
 }
 
-const checkHasMessage = (error: unknown) => {
-  return error.message
+const hasStringMessage = (error: unknown): error is { message: string } => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message: unknown }).message === 'string'
+  );
+}
+
+const checkHasMessage = (error: unknown): ErrorType => {
+  return hasStringMessage(error)
     ?
-      { ...snaxiosError, message: error.message! }
-    : 
+      { ...snaxiosError, message: error.message }
+    :
       snaxiosError;
 }
 
@@ -94,17 +110,34 @@ async function snaxios<T>(url: string, args: SnaxiosArgs): Promise<SnaxiosReturn
   try {
     const response = await fetch(finalUrl, fetchObject)
     const result = await response.json();
-    return { 
-      status: response.status, 
-      data: result as T, 
-      error: null 
+
+    if (!response.ok) {
+      return {
+        status: response.status,
+        data: null,
+        error: isDEErrorType(result) ? result : checkHasMessage(result) // if the response body is a formatted return type with code/message/details/hint, just return it, otherwise, check to see if it has a message field and return the snaxios error object with the body's message replacing the generic snaxios error, or just the generic snaxios error object if no message attached
+      } as SnaxiosReturnObject<T>;
+    }
+
+    return {
+      status: response.status,
+      data: result as T,
+      error: null
     } as SnaxiosReturnObject<T>;
   } catch (error) {
     console.error(error);
-    return { 
-      status: error.status ? error.status : 500, 
-      data: null, 
-      error: isDEErrorType(error) ? error as ErrorType : checkHasMessage(error) // if the error is a formatted return type with code/message/details/hint, just return it, otherwise, check to see if it has a message field and return the snaxios error object with the error's message replacing the generic snaxios error, or just the generic snaxios error object if no message attached 
+
+    const status =
+      typeof error === 'object' && error !== null && 'status' in error && typeof (error as { status: unknown }).status === 'number'
+        ?
+          (error as { status: number }).status
+        :
+          500;
+
+    return {
+      status,
+      data: null,
+      error: isDEErrorType(error) ? error : checkHasMessage(error) // if the error is a formatted return type with code/message/details/hint, just return it, otherwise, check to see if it has a message field and return the snaxios error object with the error's message replacing the generic snaxios error, or just the generic snaxios error object if no message attached
     } as SnaxiosReturnObject<T>;
   }
 }

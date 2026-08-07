@@ -7,21 +7,22 @@ import type { BodyInit, HeadersInit } from 'bun';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-interface ErrorType {
+// delete this type if you have the dataerror library installed
+export type ErrorType = {
   code: string;
   message: string;
   details: string;
   hint: string;
 }
 
-interface SnaxiosFetchObject {
+export type SnaxiosFetchObject = {
   method: Method;
   headers: HeadersInit; 
   body?: BodyInit | null | undefined; 
   next?: { revalidate: number };
 }
 
-interface SnaxiosArgs {
+export type SnaxiosArgs = {
   method: Method;
   headers: HeadersInit; 
   body?: BodyInit | null | undefined; 
@@ -36,7 +37,7 @@ interface SnaxiosReturnObject<T> extends DataErrorReturnType<T> {
 }
 */
 
-interface SnaxiosReturnObject<T> {
+export type SnaxiosReturnObject<T> = {
   data: T | null;
   error: ErrorType | null;
   status: number;

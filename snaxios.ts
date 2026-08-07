@@ -77,11 +77,7 @@ const checkHasMessage = (error: unknown): ErrorType => {
       snaxiosError;
 }
 
-// trying to convert this to an arrow function threw errors so it will stay an old-style function
-// time wasted trying to make this an arrow function so far (hh:mm:ss)
-// 00:12:30
-//  add any time you waste trying to make this an arrow function to the count above.
-async function snaxiosCore<T>(url: string, args: SnaxiosArgs): Promise<SnaxiosReturnObject<T>> {
+const snaxiosCore = async <T>(url: string, args: SnaxiosArgs): Promise<SnaxiosReturnObject<T>> => {
   const { method, headers, body, params, nextRevalidateTime } = args;
 
   const typedParams = params ? params : {};

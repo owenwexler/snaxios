@@ -18,7 +18,7 @@ describe('snaxios against a read-only mock backend', () => {
   });
 
   test('request with no headers returns a 401 with the error propagated to the snaxios error shape', async () => {
-    const result = await snaxios<Todo[]>(`${baseUrl}/todos`, { method: 'GET', headers: {} });
+    const result = await snaxios.get<Todo[]>(`${baseUrl}/todos`, { headers: {} });
 
     expect(result.status).toBe(401);
     expect(result.data).toBeNull();
@@ -26,8 +26,7 @@ describe('snaxios against a read-only mock backend', () => {
   });
 
   test('GET with proper api key and no params returns the expected data with a 200', async () => {
-    const result = await snaxios<Todo[]>(`${baseUrl}/todos`, {
-      method: 'GET',
+    const result = await snaxios.get<Todo[]>(`${baseUrl}/todos`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
@@ -38,8 +37,7 @@ describe('snaxios against a read-only mock backend', () => {
   });
 
   test('GET with proper api key and a limit param returns data limited to that number with a 200', async () => {
-    const result = await snaxios<Todo[]>(`${baseUrl}/todos`, {
-      method: 'GET',
+    const result = await snaxios.get<Todo[]>(`${baseUrl}/todos`, {
       headers: { 'x-api-key': server.apiKey },
       params: { limit: 2 },
     });
@@ -50,8 +48,7 @@ describe('snaxios against a read-only mock backend', () => {
   });
 
   test('GET from a route with a thrown plain string error returns the generic snaxios error with a 500', async () => {
-    const result = await snaxios<never>(`${baseUrl}/error/string`, {
-      method: 'GET',
+    const result = await snaxios.get<never>(`${baseUrl}/error/string`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
@@ -62,8 +59,7 @@ describe('snaxios against a read-only mock backend', () => {
   });
 
   test('GET from a route with a returned error with only a message returns a modified snaxios error with a 500', async () => {
-    const result = await snaxios<never>(`${baseUrl}/error/message`, {
-      method: 'GET',
+    const result = await snaxios.get<never>(`${baseUrl}/error/message`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
@@ -74,8 +70,7 @@ describe('snaxios against a read-only mock backend', () => {
   });
 
   test('GET from a route with a dataerror-formatted error returns the dataerror-formatted error in full', async () => {
-    const result = await snaxios<never>(`${baseUrl}/error/dataerror`, {
-      method: 'GET',
+    const result = await snaxios.get<never>(`${baseUrl}/error/dataerror`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
@@ -90,8 +85,7 @@ describe('snaxios against a read-only mock backend', () => {
   });
 
   test('GET for a todo that does not exist returns a propagated 404 in the snaxios error shape', async () => {
-    const result = await snaxios<Todo>(`${baseUrl}/todos/999`, {
-      method: 'GET',
+    const result = await snaxios.get<Todo>(`${baseUrl}/todos/999`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
@@ -103,8 +97,7 @@ describe('snaxios against a read-only mock backend', () => {
   test("returned data is of the same shape as the type passed in as snaxios' generic", async () => {
     // generics erase at runtime, so the closest we can assert here is that every field
     // declared on Todo is present on the data with the right runtime type.
-    const result = await snaxios<Todo[]>(`${baseUrl}/todos`, {
-      method: 'GET',
+    const result = await snaxios.get<Todo[]>(`${baseUrl}/todos`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
@@ -116,8 +109,7 @@ describe('snaxios against a read-only mock backend', () => {
   });
 
   test('multiple params are all serialized onto the query string', async () => {
-    const result = await snaxios<Record<string, string>>(`${baseUrl}/echo/query`, {
-      method: 'GET',
+    const result = await snaxios.get<Record<string, string>>(`${baseUrl}/echo/query`, {
       headers: { 'x-api-key': server.apiKey },
       params: { limit: 2, completed: true },
     });
@@ -127,8 +119,7 @@ describe('snaxios against a read-only mock backend', () => {
   });
 
   test('params with values needing URL-encoding are encoded and decoded back to the original value', async () => {
-    const result = await snaxios<Record<string, string>>(`${baseUrl}/echo/query`, {
-      method: 'GET',
+    const result = await snaxios.get<Record<string, string>>(`${baseUrl}/echo/query`, {
       headers: { 'x-api-key': server.apiKey },
       params: { search: 'snacks & chips = yummy 🍿' },
     });
@@ -138,8 +129,7 @@ describe('snaxios against a read-only mock backend', () => {
   });
 
   test('an empty params object hits the same code path as no params at all', async () => {
-    const result = await snaxios<Todo[]>(`${baseUrl}/todos`, {
-      method: 'GET',
+    const result = await snaxios.get<Todo[]>(`${baseUrl}/todos`, {
       headers: { 'x-api-key': server.apiKey },
       params: {},
     });
@@ -149,8 +139,7 @@ describe('snaxios against a read-only mock backend', () => {
   });
 
   test('a response body that is not valid JSON is caught rather than crashing, and returns a snaxios error shape with a 500', async () => {
-    const result = await snaxios<never>(`${baseUrl}/malformed-json`, {
-      method: 'GET',
+    const result = await snaxios.get<never>(`${baseUrl}/malformed-json`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
@@ -179,8 +168,7 @@ describe('snaxios against a mutating mock backend', () => {
   });
 
   test('POST with proper api key and body creates a todo, and a subsequent GET reflects it with a 200', async () => {
-    const postResult = await snaxios<Todo>(`${baseUrl}/todos`, {
-      method: 'POST',
+    const postResult = await snaxios.post<Todo>(`${baseUrl}/todos`, {
       headers: { 'x-api-key': server.apiKey, 'content-type': 'application/json' },
       body: JSON.stringify({ title: 'a new todo', completed: false }),
     });
@@ -188,8 +176,7 @@ describe('snaxios against a mutating mock backend', () => {
     expect(postResult.status).toBe(201);
     expect(postResult.error).toBeNull();
 
-    const getResult = await snaxios<Todo[]>(`${baseUrl}/todos`, {
-      method: 'GET',
+    const getResult = await snaxios.get<Todo[]>(`${baseUrl}/todos`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
@@ -199,8 +186,7 @@ describe('snaxios against a mutating mock backend', () => {
   });
 
   test('PUT with proper api key and body replaces a todo, and a subsequent GET reflects it with a 200', async () => {
-    const putResult = await snaxios<Todo>(`${baseUrl}/todos/1`, {
-      method: 'PUT',
+    const putResult = await snaxios.put<Todo>(`${baseUrl}/todos/1`, {
       headers: { 'x-api-key': server.apiKey, 'content-type': 'application/json' },
       body: JSON.stringify({ title: 'replaced todo', completed: true }),
     });
@@ -208,8 +194,7 @@ describe('snaxios against a mutating mock backend', () => {
     expect(putResult.status).toBe(200);
     expect(putResult.error).toBeNull();
 
-    const getResult = await snaxios<Todo>(`${baseUrl}/todos/1`, {
-      method: 'GET',
+    const getResult = await snaxios.get<Todo>(`${baseUrl}/todos/1`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
@@ -218,8 +203,7 @@ describe('snaxios against a mutating mock backend', () => {
   });
 
   test('PATCH with proper api key and body partially updates a todo, and a subsequent GET reflects it with a 200', async () => {
-    const patchResult = await snaxios<Todo>(`${baseUrl}/todos/1`, {
-      method: 'PATCH',
+    const patchResult = await snaxios.patch<Todo>(`${baseUrl}/todos/1`, {
       headers: { 'x-api-key': server.apiKey, 'content-type': 'application/json' },
       body: JSON.stringify({ completed: true }),
     });
@@ -227,8 +211,7 @@ describe('snaxios against a mutating mock backend', () => {
     expect(patchResult.status).toBe(200);
     expect(patchResult.error).toBeNull();
 
-    const getResult = await snaxios<Todo>(`${baseUrl}/todos/1`, {
-      method: 'GET',
+    const getResult = await snaxios.get<Todo>(`${baseUrl}/todos/1`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
@@ -237,16 +220,14 @@ describe('snaxios against a mutating mock backend', () => {
   });
 
   test('DELETE with proper api key removes a todo, and a subsequent GET of the list reflects it with a 200', async () => {
-    const deleteResult = await snaxios<Todo>(`${baseUrl}/todos/1`, {
-      method: 'DELETE',
+    const deleteResult = await snaxios.delete<Todo>(`${baseUrl}/todos/1`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
     expect(deleteResult.status).toBe(200);
     expect(deleteResult.error).toBeNull();
 
-    const getResult = await snaxios<Todo[]>(`${baseUrl}/todos`, {
-      method: 'GET',
+    const getResult = await snaxios.get<Todo[]>(`${baseUrl}/todos`, {
       headers: { 'x-api-key': server.apiKey },
     });
 
@@ -256,8 +237,7 @@ describe('snaxios against a mutating mock backend', () => {
   });
 
   test('PUT to a todo that does not exist returns a propagated 404 in the snaxios error shape', async () => {
-    const result = await snaxios<Todo>(`${baseUrl}/todos/999`, {
-      method: 'PUT',
+    const result = await snaxios.put<Todo>(`${baseUrl}/todos/999`, {
       headers: { 'x-api-key': server.apiKey, 'content-type': 'application/json' },
       body: JSON.stringify({ title: 'does not matter', completed: false }),
     });
@@ -268,8 +248,7 @@ describe('snaxios against a mutating mock backend', () => {
   });
 
   test('PATCH to a todo that does not exist returns a propagated 404 in the snaxios error shape', async () => {
-    const result = await snaxios<Todo>(`${baseUrl}/todos/999`, {
-      method: 'PATCH',
+    const result = await snaxios.patch<Todo>(`${baseUrl}/todos/999`, {
       headers: { 'x-api-key': server.apiKey, 'content-type': 'application/json' },
       body: JSON.stringify({ completed: true }),
     });
@@ -280,8 +259,7 @@ describe('snaxios against a mutating mock backend', () => {
   });
 
   test('a partial PUT body fully replaces the todo, dropping fields the body omitted', async () => {
-    const putResult = await snaxios<Todo>(`${baseUrl}/todos/2`, {
-      method: 'PUT',
+    const putResult = await snaxios.put<Todo>(`${baseUrl}/todos/2`, {
       headers: { 'x-api-key': server.apiKey, 'content-type': 'application/json' },
       body: JSON.stringify({ title: 'only a title' }),
     });
@@ -293,8 +271,7 @@ describe('snaxios against a mutating mock backend', () => {
   });
 
   test('a partial PATCH body merges onto the existing todo instead of replacing it', async () => {
-    const patchResult = await snaxios<Todo>(`${baseUrl}/todos/2`, {
-      method: 'PATCH',
+    const patchResult = await snaxios.patch<Todo>(`${baseUrl}/todos/2`, {
       headers: { 'x-api-key': server.apiKey, 'content-type': 'application/json' },
       body: JSON.stringify({ completed: false }),
     });
@@ -307,7 +284,7 @@ describe('snaxios against a mutating mock backend', () => {
 
 describe('snaxios against an unreachable host', () => {
   test('a network-level failure is caught and returns the generic snaxios error with a 500', async () => {
-    const result = await snaxios<never>('http://localhost:1', { method: 'GET', headers: {} });
+    const result = await snaxios.get<never>('http://localhost:1', { headers: {} });
 
     expect(result.status).toBe(500);
     expect(result.data).toBeNull();

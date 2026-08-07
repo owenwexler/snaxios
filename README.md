@@ -12,7 +12,7 @@ Testing framework: bun:test
 
 # INSTALLATION
 **Users**:
-Copy ```snaxios.ts``` into a folder of your choosing within your project.  That's it.
+Copy ```snaxios.ts``` into a folder of your choosing within your project or copy-paste the code from ```snaxios.ts``` into a blank file.  That's it.
 
 **Developers/maintainers**:
 1. Have Bun installed.  You must have Bun installed, we use Bun because it less vulnerable to supply chain attacks than Node.  Version 1.3 is recommended until version 1.4 and later is confirmed stable.

@@ -81,7 +81,7 @@ const checkHasMessage = (error: unknown): ErrorType => {
 // time wasted trying to make this an arrow function so far (hh:mm:ss)
 // 00:12:30
 //  add any time you waste trying to make this an arrow function to the count above.
-async function snaxios<T>(url: string, args: SnaxiosArgs): Promise<SnaxiosReturnObject<T>> {
+async function snaxiosCore<T>(url: string, args: SnaxiosArgs): Promise<SnaxiosReturnObject<T>> {
   const { method, headers, body, params, nextRevalidateTime } = args;
 
   const typedParams = params ? params : {};
@@ -141,6 +141,22 @@ async function snaxios<T>(url: string, args: SnaxiosArgs): Promise<SnaxiosReturn
     } as SnaxiosReturnObject<T>;
   }
 }
+
+// method is supplied by each snaxios.<verb> method below, so callers never pass it directly
+type SnaxiosMethodArgs = Omit<SnaxiosArgs, 'method'>;
+
+const snaxios = {
+  get: <T>(url: string, args: SnaxiosMethodArgs): Promise<SnaxiosReturnObject<T>> =>
+    snaxiosCore<T>(url, { ...args, method: 'GET' }),
+  post: <T>(url: string, args: SnaxiosMethodArgs): Promise<SnaxiosReturnObject<T>> =>
+    snaxiosCore<T>(url, { ...args, method: 'POST' }),
+  put: <T>(url: string, args: SnaxiosMethodArgs): Promise<SnaxiosReturnObject<T>> =>
+    snaxiosCore<T>(url, { ...args, method: 'PUT' }),
+  patch: <T>(url: string, args: SnaxiosMethodArgs): Promise<SnaxiosReturnObject<T>> =>
+    snaxiosCore<T>(url, { ...args, method: 'PATCH' }),
+  delete: <T>(url: string, args: SnaxiosMethodArgs): Promise<SnaxiosReturnObject<T>> =>
+    snaxiosCore<T>(url, { ...args, method: 'DELETE' }),
+};
 
 export {
   snaxios

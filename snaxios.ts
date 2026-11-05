@@ -2,18 +2,9 @@
  * SNAXIOS: a minimal one-file zero-dependency HTTP library that can serve as, not exactly a drop-in replacement, but a minimal-refactor alternative to Axios in most common use cases.  It is a minimal type-safe wrapper around the JavaScript/TypeScript fetch API that returns a similar data shape to Axios, but excludes some functionality.  Think of it as the Preact to Axios' React.
 */
 
-import type { BodyInit, HeadersInit } from 'bun';
-// import type { ErrorType, DataErrorReturnType } from 'dataerror';
+import type { ErrorType, DataErrorReturnObject } from 'dataerror';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-
-// delete this type if you have the dataerror library installed
-export type ErrorType = {
-  code: string;
-  message: string;
-  details: string;
-  hint: string;
-}
 
 export type SnaxiosFetchObject = {
   method: Method;
@@ -30,16 +21,7 @@ export type SnaxiosArgs = {
   nextRevalidateTime?: number;
 }
 
-/*
- // If you have the dataerror library installed, use this instead of the below type
-interface SnaxiosReturnObject<T> extends DataErrorReturnType<T> {
-  status: number;
-}
-*/
-
-export type SnaxiosReturnObject<T> = {
-  data: T | null;
-  error: ErrorType | null;
+interface SnaxiosReturnObject<T> extends DataErrorReturnObject<T> {
   status: number;
 }
 
@@ -78,6 +60,26 @@ const checkHasMessage = (error: unknown): ErrorType => {
       snaxiosError;
 }
 
+// Finds the typed error in an error response body.  The body can be the ErrorType itself, or a dataerror return object ({ data: null, error: ErrorType }) as returned by our own API routes.
+const getBodyError = (result: unknown): ErrorType => {
+  if (isDEErrorType(result)) {
+    return result;
+  }
+
+  const wrappedError =
+    typeof result === 'object' && result !== null && 'error' in result
+    ?
+      (result as { error: unknown }).error
+    :
+      null;
+
+  return isDEErrorType(wrappedError)
+    ?
+      wrappedError
+    :
+      checkHasMessage(result);
+}
+
 const snaxiosCore = async <T>(url: string, args: SnaxiosArgs): Promise<SnaxiosReturnObject<T>> => {
   const { method, headers, body, params, nextRevalidateTime } = args;
 
@@ -112,7 +114,7 @@ const snaxiosCore = async <T>(url: string, args: SnaxiosArgs): Promise<SnaxiosRe
       return {
         status: response.status,
         data: null,
-        error: isDEErrorType(result) ? result : checkHasMessage(result) // if the response body is a formatted return type with code/message/details/hint, just return it, otherwise, check to see if it has a message field and return the snaxios error object with the body's message replacing the generic snaxios error, or just the generic snaxios error object if no message attached
+        error: getBodyError(result) // if the response body is (or wraps) a formatted error with code/message/details/hint, return it, otherwise, check to see if it has a message field and return the snaxios error object with the body's message replacing the generic snaxios error, or just the generic snaxios error object if no message attached
       } as SnaxiosReturnObject<T>;
     }
 
@@ -140,19 +142,25 @@ const snaxiosCore = async <T>(url: string, args: SnaxiosArgs): Promise<SnaxiosRe
 }
 
 // method is supplied by each snaxios.<verb> method below, so callers never pass it directly
-type SnaxiosMethodArgs = Omit<SnaxiosArgs, 'method'>;
+// headers and body are optional on each method so simple GETs can be written as snaxios.get<T>(url)
+type SnaxiosMethodArgs = Partial<Omit<SnaxiosArgs, 'method'>>;
+
+const withDefaults = (args: SnaxiosMethodArgs): Omit<SnaxiosArgs, 'method'> => ({
+  headers: {},
+  ...args
+});
 
 const snaxios = {
-  get: <T>(url: string, args: SnaxiosMethodArgs): Promise<SnaxiosReturnObject<T>> =>
-    snaxiosCore<T>(url, { ...args, method: 'GET' }),
-  post: <T>(url: string, args: SnaxiosMethodArgs): Promise<SnaxiosReturnObject<T>> =>
-    snaxiosCore<T>(url, { ...args, method: 'POST' }),
-  put: <T>(url: string, args: SnaxiosMethodArgs): Promise<SnaxiosReturnObject<T>> =>
-    snaxiosCore<T>(url, { ...args, method: 'PUT' }),
-  patch: <T>(url: string, args: SnaxiosMethodArgs): Promise<SnaxiosReturnObject<T>> =>
-    snaxiosCore<T>(url, { ...args, method: 'PATCH' }),
-  delete: <T>(url: string, args: SnaxiosMethodArgs): Promise<SnaxiosReturnObject<T>> =>
-    snaxiosCore<T>(url, { ...args, method: 'DELETE' }),
+  get: <T>(url: string, args: SnaxiosMethodArgs = {}): Promise<SnaxiosReturnObject<T>> =>
+    snaxiosCore<T>(url, { ...withDefaults(args), method: 'GET' }),
+  post: <T>(url: string, args: SnaxiosMethodArgs = {}): Promise<SnaxiosReturnObject<T>> =>
+    snaxiosCore<T>(url, { ...withDefaults(args), method: 'POST' }),
+  put: <T>(url: string, args: SnaxiosMethodArgs = {}): Promise<SnaxiosReturnObject<T>> =>
+    snaxiosCore<T>(url, { ...withDefaults(args), method: 'PUT' }),
+  patch: <T>(url: string, args: SnaxiosMethodArgs = {}): Promise<SnaxiosReturnObject<T>> =>
+    snaxiosCore<T>(url, { ...withDefaults(args), method: 'PATCH' }),
+  delete: <T>(url: string, args: SnaxiosMethodArgs = {}): Promise<SnaxiosReturnObject<T>> =>
+    snaxiosCore<T>(url, { ...withDefaults(args), method: 'DELETE' }),
 };
 
 export {
